@@ -23,13 +23,13 @@ namespace NewDisplay
     {
         public static ArrayList busStatus = new ArrayList();
 
-        public static string log, fmt = "00", justCheck;
+        public static string log, fmt = "00", justCheck, depart_info;
         public static bool isbreak;
         public static bool isrun;
         public static int init, lastNum, temp;
         public static byte[] getBuf = new byte[1024];
         Form2 f2 = new Form2();
-        Form3 f3 = new Form3();
+       
         TcpClient tc;
         NetworkStream ns1;
         private void Form1_Load(object sender, EventArgs e)
@@ -95,7 +95,6 @@ namespace NewDisplay
 
         private void button2_Click(object sender, EventArgs e)
         {
-
             GetMsg();
         }
 
@@ -103,7 +102,7 @@ namespace NewDisplay
         {
             listBox1.Items.Clear();
             tc.Close();
-            
+
             isrun = false;
             isbreak = false;
             button1.Enabled = false;
@@ -226,7 +225,7 @@ namespace NewDisplay
                     sumList.Add(justCheck);
                 }
                 else sumList.Add(justCheck);
-                f3.busNum.Add(justCheck);
+               
 
                 rbody.nodePart = getBuf[init + 3]; // 노선 구분
                 if (rbody.nodePart == 0x01) justCheck = "시점출발";
@@ -243,6 +242,7 @@ namespace NewDisplay
                 rbody.stop_id[0] = getBuf[init + 5];
                 rbody.stop_id[1] = getBuf[init + 6];
                 justCheck = Cal(rbody.stop_id[0], rbody.stop_id[1]);
+                depart_info = justCheck;
                 sumList.Add(justCheck); // 최근 통과한 정류소 지점 ID 
 
                 rbody.rest_stop[0] = getBuf[init + 7];
@@ -252,12 +252,18 @@ namespace NewDisplay
 
                 rbody.expected_arrival[0] = getBuf[init + 9];
                 rbody.expected_arrival[1] = getBuf[init + 10];
+                if(depart_info.Equals("0"))
+                {
+                    depart_info = Cal(rbody.expected_arrival[0], rbody.expected_arrival[1]);
+                    justCheck = depart_info.Insert(2, ":");                                       
+                }
+                else
+                { 
                 justCheck = Cal(rbody.expected_arrival[0], rbody.expected_arrival[1]);
                 temp = int.Parse(justCheck) / 60;
                 justCheck = temp.ToString() + "분";
+                }
                 sumList.Add(justCheck);                //[5] 도착예정시간
-
-
                 rbody.bus_stat[0] = getBuf[init + 11];
                 rbody.bus_stat[1] = getBuf[init + 12];
                 justCheck = Cal(rbody.bus_stat[0], rbody.bus_stat[1]);
@@ -271,7 +277,8 @@ namespace NewDisplay
                 sumList.Add(justCheck); //[6] 버스유형
 
                 rbody.info_stat = getBuf[init + 13];
-                sumList.Add(rbody.info_stat.ToString()); //[7]
+                justCheck = InfoCheck(rbody.info_stat);
+                sumList.Add(justCheck); //[7]
 
                 rbody.emer_stat = getBuf[init + 14];
                 if (rbody.emer_stat == 0x00) justCheck = "정상";
@@ -285,7 +292,7 @@ namespace NewDisplay
                 else if (rbody.bus_sort == 0x14) justCheck = "마을";
                 else if (rbody.bus_sort == 0x1E) justCheck = "지선";
                 sumList.Add(justCheck); //[9]
-                
+
 
                 rbody.vehicle_id[0] = getBuf[init + 16];
                 rbody.vehicle_id[1] = getBuf[init + 17];
@@ -443,9 +450,8 @@ namespace NewDisplay
                     int nbytes = stream.Read(getBuf, 0, getBuf.Length);
                     //string output = Encoding.ASCII.GetString(getBuf, 0, nbytes);
                     //listBox1.Items.Add(nbytes.ToString());
-
                     ReceiveDefine();
-                    
+
                     for (int i = 0; i < nbytes; i++) {
                         getmsg.Add(getBuf[i]);
                     }
@@ -518,20 +524,19 @@ namespace NewDisplay
             }
         }
 
-        //public static string infoCheck (byte info){
-        //    string check;
-        //    byte x = 0xff;
-        //    byte y = info;
-            
-        //    byte a = (byte)(x & y);
-
-        //    if(a == 0x20)
-        //    {
-        //        if()
-        //    }
-
-        //    return check;
-        //}
+        public static string InfoCheck(byte info)
+        {
+            string result = null;
+            if (info == 0x00) result = "일반버스";
+            else if (info == 0x01) result = "저상버스";
+            else if (info == 0x02) result = "일반버스지체";
+            else if (info == 0x03) result = "저상버스지체";
+            else if (info == 0x04) result = "일반버스부분지체";
+            else if (info == 0x05) result = "저상버스부분지체";
+            else if (info == 0x20) result = "기점 출발 정보";
+            else result = "버스 진입 상태";
+            return result;
+        }
 
     }
 }
