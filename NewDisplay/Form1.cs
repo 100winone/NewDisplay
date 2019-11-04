@@ -203,9 +203,6 @@ namespace NewDisplay
             double fss = Convert.ToInt32(recvmsg[8]);
 
 
-
-
-
             for (int i = 1; i <= int.Parse(getBuf[9].ToString()); i++)
             {
                 init = (i * 18) - 7;
